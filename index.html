@@ -560,14 +560,14 @@ body {
 @media print {
   @page { margin: 0; size: A4 portrait; }
 
-  body, html { background: #fff !important; }
-  .app-bar, .sidebar, .preview-toolbar { display: none !important; }
+  body, html { background: #fff !important; overflow: visible !important; }
+  .app-bar, .sidebar, .preview-toolbar, .fab-preview, .preview-modal-bar { display: none !important; }
   .layout { display: block !important; }
-  .preview-area {
-    padding: 0 !important;
-    background: #fff !important;
-    align-items: stretch !important;
-  }
+  .preview-area { display: block !important; padding: 0 !important; background: #fff !important; }
+  .preview-modal { position: static !important; display: block !important; background: #fff !important; overflow: visible !important; }
+  .preview-modal-content { padding: 0 !important; }
+  #invoice-output { display: none !important; }
+  #invoice-output-mobile { display: block !important; }
   .invoice-doc {
     width: 100% !important;
     max-width: 100% !important;
@@ -582,6 +582,101 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--sand); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ─── MOBILE FAB ─────────────────────────────────────── */
+.fab-preview {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  z-index: 100;
+  background: var(--gold);
+  color: var(--night);
+  border: none;
+  border-radius: 50px;
+  padding: 14px 22px;
+  font-family: var(--ff-sans);
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(13,31,45,0.25);
+  cursor: pointer;
+}
+
+/* ─── MOBILE PREVIEW MODAL ───────────────────────────── */
+.preview-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--sand);
+  overflow-y: auto;
+  flex-direction: column;
+}
+.preview-modal.open { display: flex; }
+.preview-modal-bar {
+  position: sticky;
+  top: 0;
+  background: var(--night);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 2px solid var(--gold);
+  z-index: 10;
+  flex-shrink: 0;
+  gap: 10px;
+}
+.preview-modal-bar .pm-title {
+  font-family: var(--ff-serif);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--white);
+  flex: 1;
+}
+.preview-modal-bar .pm-close {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: var(--white);
+  border-radius: var(--radius);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-family: var(--ff-sans);
+  cursor: pointer;
+}
+.preview-modal-bar .pm-print {
+  background: var(--gold);
+  border: none;
+  color: var(--night);
+  border-radius: var(--radius);
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--ff-sans);
+  cursor: pointer;
+}
+.preview-modal-content {
+  padding: 20px 12px 48px;
+  overflow-x: auto;
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────── */
+@media (max-width: 700px) {
+  .layout { grid-template-columns: 1fr; }
+  .preview-area { display: none; }
+  .fab-preview { display: block; }
+  .sidebar { padding: 16px 14px 110px; }
+  .app-bar { padding: 0 16px; height: 50px; }
+  .app-bar .brand { font-size: 18px; }
+  .form-row.cols-2 { grid-template-columns: 1fr; }
+  .invoice-doc { padding: 24px 14px; }
+  .doc-header { flex-direction: column; gap: 10px; }
+  .doc-meta { text-align: left; }
+  .doc-meta .inv-label { font-size: 26px; }
+  .parties { grid-template-columns: 1fr; }
+  .inv-table { font-size: 11px; }
+  .inv-table th, .inv-table td { padding: 7px 8px; }
+  .total-block .tbl-amount { font-size: 26px; }
+}
 </style>
 </head>
 <body>
@@ -624,11 +719,11 @@ body {
       <div class="section-label">Billed To</div>
       <div id="contact-selector-area" style="margin-bottom:10px;"></div>
       <div class="form-row cols-2">
-        <div class="field"><label>Company Name</label><input type="text" id="cli-name" placeholder="Myway SAS" oninput="buildPreview()" /></div>
-        <div class="field"><label>SIRET / Company No.</label><input type="text" id="cli-siret" placeholder="851375444" oninput="buildPreview()" /></div>
+        <div class="field"><label>Company Name</label><input type="text" id="cli-name" placeholder="M" oninput="buildPreview()" /></div>
+        <div class="field"><label>SIRET / Company No.</label><input type="text" id="cli-siret" placeholder="" oninput="buildPreview()" /></div>
       </div>
       <div class="form-row cols-1">
-        <div class="field"><label>Address</label><input type="text" id="cli-addr" placeholder="165 Avenue de Bretagne, Lille, France 59000" oninput="buildPreview()" /></div>
+        <div class="field"><label>Address</label><input type="text" id="cli-addr" placeholder="" oninput="buildPreview()" /></div>
       </div>
       <div class="form-row cols-2">
         <div class="field"><label>Email</label><input type="email" id="cli-email" placeholder="contact@client.com" oninput="buildPreview()" /></div>
@@ -674,7 +769,7 @@ body {
 
   </aside>
 
-  <!-- ── PREVIEW ── -->
+  <!-- ── PREVIEW (desktop) ── -->
   <main class="preview-area">
     <div class="preview-toolbar">
       <button class="btn btn-outline" onclick="resetForm()">← New</button>
@@ -682,6 +777,21 @@ body {
     </div>
     <div id="invoice-output"></div>
   </main>
+</div>
+
+<!-- ── MOBILE FAB ── -->
+<button class="fab-preview" onclick="openMobilePreview()">👁 Preview</button>
+
+<!-- ── MOBILE PREVIEW MODAL ── -->
+<div class="preview-modal" id="preview-modal">
+  <div class="preview-modal-bar">
+    <span class="pm-title">Invoice Preview</span>
+    <button class="pm-close" onclick="closeMobilePreview()">← Back</button>
+    <button class="pm-print" onclick="window.print()">⊟ PDF</button>
+  </div>
+  <div class="preview-modal-content">
+    <div id="invoice-output-mobile"></div>
+  </div>
 </div>
 
 <script>
@@ -697,7 +807,7 @@ const HOTELS = [
 ];
 const SERVICES = [
   "Pack Transport Complet","Pack Omra Complet","Visa Omra","Billet d'avion",
-  "Service de guide","Assurance voyage","Transfer aéroport","Autre service (à préciser)"
+  "Guide","Transport","Transfer aéroport","Autre service (à préciser)"
 ];
 
 let lines = [], contacts = [], invoices = [], lineId = 0;
@@ -705,17 +815,21 @@ let editingInvKey = null;
 
 /* ─── STORAGE ──────────────────────────────────────── */
 async function storageGet(key) {
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch { return null; }
+  try {
+    const r = await window.storage.get(key);
+    return r ? JSON.parse(r.value) : null;
+  } catch { return null; }
 }
 async function storageSet(key, val) {
-  try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) { console.error(e); }
+  try { await window.storage.set(key, JSON.stringify(val)); } catch (e) { console.error(e); }
 }
 async function storageDel(key) {
-  try { localStorage.removeItem(key); } catch {}
+  try { await window.storage.delete(key); } catch {}
 }
 async function storageList(prefix) {
   try {
-    return Object.keys(localStorage).filter(k => k.startsWith(prefix));
+    const r = await window.storage.list(prefix);
+    return r ? r.keys : [];
   } catch { return []; }
 }
 
@@ -942,7 +1056,7 @@ function buildPreview() {
     </tr>`;
   }).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;font-size:12px;font-style:italic">Aucune ligne de facturation</td></tr>`;
 
-  document.getElementById('invoice-output').innerHTML = `
+  const html = `
   <div class="invoice-doc" id="printable-doc">
     <div class="doc-header">
       <div class="doc-brand">
@@ -955,7 +1069,7 @@ function buildPreview() {
           N° <span>${num}</span>
           ${status==='paid'?'<span class="badge badge-paid" style="margin-left:8px">Payée</span>':''}
         </div>
-        <div class="inv-sub">Invoice Date : <span>${dateStr}</span></div>
+        <div class="inv-sub">Date : <span>${dateStr}</span></div>
       </div>
     </div>
     <div class="gold-rule"></div>
@@ -980,7 +1094,7 @@ function buildPreview() {
     </div>
     <table class="inv-table">
       <thead><tr>
-        <th>Item</th>
+        <th>Iteù</th>
         <th style="text-align:center">${colHdr}</th>
         <th style="text-align:center">Prix unit.</th>
         <th style="text-align:right">Prix total</th>
@@ -1004,9 +1118,24 @@ function buildPreview() {
       </div>
     </div>
     <div class="inv-footer">
-      This is an electronically generated document, no signature is required.
+     This is an electronically generated document, no signature is required.
     </div>
   </div>`;
+
+  document.getElementById('invoice-output').innerHTML = html;
+  const mob = document.getElementById('invoice-output-mobile');
+  if (mob) mob.innerHTML = html;
+}
+
+/* ─── MOBILE MODAL ─────────────────────────────────── */
+function openMobilePreview() {
+  buildPreview();
+  document.getElementById('preview-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeMobilePreview() {
+  document.getElementById('preview-modal').classList.remove('open');
+  document.body.style.overflow = '';
 }
 
 /* ─── TABS ─────────────────────────────────────────── */

@@ -951,15 +951,15 @@ function buildPreview() {
     <div class="doc-header">
       <div class="doc-brand">
         <div class="brand-name">Qiyama Service</div>
-        <div class="brand-tagline">Travel &amp; Pilgrimage Services</div>
+        <div class="brand-tagline"></div>
       </div>
       <div class="doc-meta">
-        <div class="inv-label">FACTURE</div>
+        <div class="inv-label">Invoice</div>
         <div class="inv-sub" style="margin-top:8px;">
           N° <span>${num}</span>
           ${status==='paid'?'<span class="badge badge-paid" style="margin-left:8px">Payée</span>':''}
         </div>
-        <div class="inv-sub">Date : <span>${dateStr}</span></div>
+        <div class="inv-sub">Invoice Date : <span>${dateStr}</span></div>
       </div>
     </div>
     <div class="gold-rule"></div>
@@ -984,7 +984,7 @@ function buildPreview() {
     </div>
     <table class="inv-table">
       <thead><tr>
-        <th>Désignation</th>
+        <th>Item</th>
         <th style="text-align:center">${colHdr}</th>
         <th style="text-align:center">Prix unit.</th>
         <th style="text-align:right">Prix total</th>
@@ -999,16 +999,16 @@ function buildPreview() {
       </div>
     </div>
     <div class="bank-section">
-      <div class="bs-label">Coordonnées bancaires</div>
+      <div class="bs-label">Bank Details</div>
       <div class="bank-grid">
-        <span class="bk">Titulaire</span><span class="bv">Qiyama Service Ltd</span>
+        <span class="bk">Account Name</span><span class="bv">Qiyama Service Ltd</span>
         <span class="bk">IBAN</span><span class="bv">BE39905971465919</span>
         <span class="bk">SWIFT / BIC</span><span class="bv">TRWIBEB1XXX</span>
-        <span class="bk">Banque</span><span class="bv">Wise — Rue du Trône 100, Bruxelles, Belgique</span>
+        <span class="bk">Bank</span><span class="bv">Wise — Rue du Trône 100, Bruxelles, Belgique</span>
       </div>
     </div>
     <div class="inv-footer">
-      Ce document est généré électroniquement. Aucune signature n'est requise.
+      This is an electronically generated document, no signature is required.
     </div>
   </div>`;
 }

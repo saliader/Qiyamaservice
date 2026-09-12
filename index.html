@@ -994,6 +994,8 @@ function lineChange(idx, field, val) {
     lines[idx].item = val==='hotel' ? HOTELS[0] : SERVICES[0];
     renderLines();
   } else {
+    const totalEl = document.querySelector(`[data-linetotal="${idx}"]`);
+    if (totalEl) totalEl.textContent = '€' + (lines[idx].qty * lines[idx].price).toFixed(2);
     updateTotal();
     buildPreview();
   }

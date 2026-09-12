@@ -819,7 +819,7 @@ let lines = [], contacts = [], invoices = [], lineId = 0;
 let editingInvKey = null;
 
 /* ─── STORAGE ──────────────────────────────────────── */
-/* ─── STORAGE ──────────────────────────────────────── */
+
 const memStore = {};
 function lsAvailable() {
   try { localStorage.setItem('__test__','1'); localStorage.removeItem('__test__'); return true; }
@@ -934,8 +934,21 @@ async function loadInvoices() {
   renderInvoicesList();
 }
 async function saveInvoice() {
-  const num = document.getElementById('inv-num').value.trim();
-  if (!num) { alert('Please enter an invoice number.'); return; }
+  let num = document.getElementById('inv-num').value.trim();
+if (!num) {
+  const year = new Date().getFullYear();
+  const clientRaw = document.getElementById('cli-name').value.trim();
+  const clientSlug = clientRaw
+    ? clientRaw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+    : 'CLIENT';
+  const existingNums = invoices
+    .map(i => i.num)
+    .filter(n => n && n.startsWith(`QS-${year}-${clientSlug}`))
+    .map(n => parseInt(n.split('-').pop()) || 0);
+  const nextNum = existingNums.length ? Math.max(...existingNums) + 1 : 1;
+  num = `QS-${year}-${clientSlug}-${String(nextNum).padStart(3, '0')}`;
+  document.getElementById('inv-num').value = num;
+}
   const cliName = document.getElementById('cli-name').value.trim();
   if (!cliName) { alert('Please enter the client name.'); return; }
 

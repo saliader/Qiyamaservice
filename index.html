@@ -990,8 +990,13 @@ function addLine() {
 function removeLine(idx) { lines.splice(idx,1); renderLines(); }
 function lineChange(idx, field, val) {
   lines[idx][field] = val;
-  if (field === 'type') lines[idx].item = val==='hotel' ? HOTELS[0] : SERVICES[0];
-  renderLines();
+  if (field === 'type') {
+    lines[idx].item = val==='hotel' ? HOTELS[0] : SERVICES[0];
+    renderLines();
+  } else {
+    updateTotal();
+    buildPreview();
+  }
 }
 function renderLines() {
   const c = document.getElementById('lines-container');

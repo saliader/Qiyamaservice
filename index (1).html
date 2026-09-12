@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Qiyama Service — Générateur de factures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+/* ─── TOKENS ─────────────────────────────────────────── */
+:root {
+  --sand:    #F2F0EB;
+  --night:   #0D1F2D;
+  --gold:    #C9A84C;
+  --slate:   #2E4A5E;
+  --gold-lt: #F0E2B8;
+  --sand-dk: #E4E0D7;
+  --night-lt: #1A3347;
+  --white:   #FFFFFF;
+  --text:    #1A2B38;
+  --muted:   #6B7E8C;
+  --border:  #D5CFC3;
+
+  --ff-serif: 'Cormorant Garamond', Georgia, serif;
+  --ff-sans:  'Inter', system-ui, sans-serif;
+  --radius:   4px;
+}
+
+/* ─── RESET ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: var(--ff-sans);
+  background: var(--sand);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ─── APP SHELL ──────────────────────────────────────── */
+.app-bar {
+  background: var(--night);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+  border-bottom: 2px solid var(--gold);
+}
+.app-bar .brand {
+  font-family: var(--ff-serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--white);
+  letter-spacing: 0.01em;
+}
+.app-bar .brand span { color: var(--gold); }
+.app-bar .sub {
+  font-size: 11px;
+  color: var(--gold);
+  font-family: var(--ff-sans);
+  font-weight: 300;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  min-height: calc(100vh - 56px);
+}
+
+/* ─── SIDEBAR ────────────────────────────────────────── */
+.sidebar {
+  background: var(--white);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 24px 20px 40px;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1.5px solid var(--border);
+  margin-bottom: 24px;
+  gap: 0;
+}
+.tab {
+  font-family: var(--ff-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1.5px;
+  cursor: pointer;
+  color: var(--muted);
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+.tab.active { color: var(--slate); border-bottom-color: var(--gold); }
+.tab:hover:not(.active) { color: var(--slate); }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ─── FORM ELEMENTS ──────────────────────────────────── */
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--slate);
+  margin: 20px 0 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--sand-dk);
+}
+.section-label:first-child { margin-top: 0; }
+
+.form-row { display: grid; gap: 10px; margin-bottom: 10px; }
+.form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+.form-row.cols-1 { grid-template-columns: 1fr; }
+
+.field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  font-family: var(--ff-sans);
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--sand);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--slate);
+  box-shadow: 0 0 0 3px rgba(46,74,94,0.1);
+  background: var(--white);
+}
+.field textarea { resize: vertical; min-height: 56px; }
+
+/* ─── BUTTONS ────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--ff-sans);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 9px 18px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-primary { background: var(--night); color: var(--white); }
+.btn-primary:hover { background: var(--slate); }
+.btn-gold { background: var(--gold); color: var(--night); }
+.btn-gold:hover { background: #b8943e; }
+.btn-outline {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.btn-outline:hover { border-color: var(--slate); color: var(--slate); background: var(--sand); }
+.btn-ghost {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+  font-size: 12px;
+}
+.btn-ghost:hover { border-color: var(--gold); color: var(--slate); background: var(--gold-lt); }
+.btn-row { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+
+/* ─── LINE ITEMS ─────────────────────────────────────── */
+.lines-head {
+  display: grid;
+  grid-template-columns: 1fr 60px 70px 80px 28px;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.line-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 70px 80px 28px;
+  gap: 6px;
+  align-items: start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--sand-dk);
+}
+.line-row select,
+.line-row input { font-size: 12px; padding: 5px 7px; }
+.line-sub { font-size: 11px; margin-top: 4px; }
+.line-total {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate);
+  padding-top: 6px;
+  text-align: right;
+}
+.btn-rm {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--border);
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 2px;
+  transition: color 0.15s;
+}
+.btn-rm:hover { color: #c0392b; }
+
+.total-bar {
+  background: var(--night);
+  color: var(--white);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+}
+.total-bar .tl { font-size: 11px; opacity: 0.65; letter-spacing: 0.06em; }
+.total-bar .tv {
+  font-family: var(--ff-serif);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+/* ─── CONTACTS LIST ──────────────────────────────────── */
+.contact-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 13px;
+  background: var(--sand);
+  margin-bottom: 6px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.contact-card:hover { border-color: var(--slate); background: var(--gold-lt); }
+.contact-card .cc-name { font-weight: 500; flex: 1; color: var(--text); }
+.contact-card .cc-sub { font-size: 11px; color: var(--muted); }
+.contact-card .cc-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--border); font-size: 15px; padding: 2px 4px;
+  transition: color 0.15s;
+}
+.contact-card .cc-del:hover { color: #c0392b; }
+
+/* ─── SAVED INVOICES LIST ────────────────────────────── */
+.inv-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  background: var(--sand);
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.inv-card:hover { border-color: var(--gold); background: var(--gold-lt); }
+.inv-card .ic-num { font-weight: 600; color: var(--slate); font-size: 14px; min-width: 70px; }
+.inv-card .ic-client { flex: 1; color: var(--text); }
+.inv-card .ic-total { font-weight: 600; color: var(--night); }
+.inv-card .ic-date { font-size: 11px; color: var(--muted); }
+.inv-card .ic-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--border); font-size: 15px; padding: 2px 4px;
+  transition: color 0.15s;
+}
+.inv-card .ic-del:hover { color: #c0392b; }
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.04em;
+}
+.badge-paid { background: #d4f0e0; color: #1a6b45; }
+.badge-unpaid { background: #fde8cc; color: #9a5200; }
+
+/* ─── PREVIEW AREA ───────────────────────────────────── */
+.preview-area {
+  background: var(--sand);
+  padding: 32px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.preview-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 720px;
+  justify-content: flex-end;
+}
+
+/* ─── INVOICE DOCUMENT ───────────────────────────────── */
+.invoice-doc {
+  background: var(--white);
+  width: 720px;
+  max-width: 100%;
+  padding: 48px 52px;
+  box-shadow: 0 4px 24px rgba(13,31,45,0.10);
+  color: var(--night);
+  font-family: var(--ff-sans);
+  border-top: 4px solid var(--gold);
+}
+
+/* Header */
+.doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+.doc-brand .brand-name {
+  font-family: var(--ff-serif);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--night);
+  line-height: 1;
+}
+.doc-brand .brand-tagline {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  text-transform: uppercase;
+  margin-top: 4px;
+  font-weight: 400;
+}
+.doc-meta { text-align: right; }
+.doc-meta .inv-label {
+  font-family: var(--ff-serif);
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--night);
+  line-height: 1;
+}
+.doc-meta .inv-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.doc-meta .inv-sub span { font-weight: 600; color: var(--night); }
+
+/* Gold rule */
+.gold-rule {
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--sand-dk) 100%);
+  margin: 0 0 28px;
+}
+
+/* Parties */
+.parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.party-box {
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  font-size: 12px;
+  line-height: 1.75;
+}
+.party-box.billed-by {
+  background: var(--night);
+  color: rgba(255,255,255,0.75);
+}
+.party-box.billed-to {
+  background: var(--sand);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.party-box .pb-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 6px;
+}
+.party-box.billed-by .pb-name {
+  font-family: var(--ff-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+.party-box.billed-to .pb-name {
+  font-family: var(--ff-serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--night);
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+/* Items table */
+.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  margin-bottom: 20px;
+}
+.inv-table thead tr {
+  background: var(--night);
+  color: var(--white);
+}
+.inv-table th {
+  padding: 9px 12px;
+  text-align: left;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: var(--ff-sans);
+}
+.inv-table th:nth-child(2),
+.inv-table th:nth-child(3) { text-align: center; }
+.inv-table th:last-child { text-align: right; }
+
+.inv-table tbody tr { border-bottom: 1px solid var(--sand-dk); }
+.inv-table tbody tr:last-child { border-bottom: none; }
+.inv-table td {
+  padding: 11px 12px;
+  vertical-align: top;
+  color: var(--text);
+}
+.inv-table td:nth-child(2),
+.inv-table td:nth-child(3) { text-align: center; color: var(--muted); }
+.inv-table td:last-child { text-align: right; font-weight: 600; color: var(--night); }
+.item-name {
+  font-weight: 600;
+  color: var(--night);
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+.item-detail {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+/* Totals */
+.totals-section {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+.total-block {
+  background: var(--night);
+  color: var(--white);
+  border-radius: var(--radius);
+  padding: 14px 24px;
+  min-width: 220px;
+  text-align: right;
+}
+.total-block .tbl-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  opacity: 0.65;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.total-block .tbl-amount {
+  font-family: var(--ff-serif);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+}
+.total-block .tbl-status {
+  font-size: 11px;
+  opacity: 0.65;
+  margin-top: 4px;
+}
+
+/* Bank */
+.bank-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  font-size: 11.5px;
+  background: var(--sand);
+  margin-bottom: 20px;
+}
+.bank-section .bs-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--slate);
+  margin-bottom: 10px;
+}
+.bank-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 20px;
+}
+.bk { color: var(--muted); }
+.bv { font-weight: 500; color: var(--night); }
+
+/* Footer */
+.inv-footer {
+  font-size: 10px;
+  color: var(--muted);
+  text-align: center;
+  font-style: italic;
+  border-top: 1px solid var(--sand-dk);
+  padding-top: 16px;
+}
+
+/* ─── EMPTY STATE ────────────────────────────────────── */
+.empty {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  padding: 24px 0;
+}
+
+/* ─── PRINT ──────────────────────────────────────────── */
+@media print {
+  @page { margin: 0; size: A4 portrait; }
+
+  body, html { background: #fff !important; }
+  .app-bar, .sidebar, .preview-toolbar { display: none !important; }
+  .layout { display: block !important; }
+  .preview-area {
+    padding: 0 !important;
+    background: #fff !important;
+    align-items: stretch !important;
+  }
+  .invoice-doc {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    padding: 32px 40px !important;
+    border-top: 4px solid var(--gold) !important;
+  }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+
+/* ─── SCROLLBAR ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--sand); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- APP BAR -->
+<header class="app-bar">
+  <div>
+    <div class="brand">Qiyama <span>Service</span></div>
+    <div class="sub">Invoice Generator</div>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('form')">New Invoice</button>
+      <button class="tab" onclick="switchTab('contacts')">Clients</button>
+      <button class="tab" onclick="switchTab('invoices')">Invoices</button>
+    </div>
+
+    <!-- FORM PANEL -->
+    <div class="panel active" id="panel-form">
+
+      <div class="section-label">Invoice Details</div>
+      <div class="form-row cols-2">
+        <div class="field"><label>Invoice No #</label><input type="text" id="inv-num" placeholder="QS-001" /></div>
+        <div class="field"><label>Invoice Date</label><input type="date" id="inv-date" /></div>
+      </div>
+      <div class="form-row cols-1">
+        <div class="field">
+          <label>Payment Status</label>
+          <select id="inv-status">
+            <option value="unpaid">Unpaid</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-label">Billed To</div>
+      <div id="contact-selector-area" style="margin-bottom:10px;"></div>
+      <div class="form-row cols-2">
+        <div class="field"><label>Company Name</label><input type="text" id="cli-name" placeholder="Myway SAS" oninput="buildPreview()" /></div>
+        <div class="field"><label>SIRET / Company No.</label><input type="text" id="cli-siret" placeholder="851375444" oninput="buildPreview()" /></div>
+      </div>
+      <div class="form-row cols-1">
+        <div class="field"><label>Address</label><input type="text" id="cli-addr" placeholder="165 Avenue de Bretagne, Lille, France 59000" oninput="buildPreview()" /></div>
+      </div>
+      <div class="form-row cols-2">
+        <div class="field"><label>Email</label><input type="email" id="cli-email" placeholder="contact@client.com" oninput="buildPreview()" /></div>
+        <div class="field"><label>Phone</label><input type="text" id="cli-phone" placeholder="+33 6 xx xx xx xx" oninput="buildPreview()" /></div>
+      </div>
+      <button class="btn btn-outline" style="font-size:12px;padding:6px 12px;margin-top:4px;" onclick="saveContact()">+ Save this client</button>
+
+      <div class="section-label">Items</div>
+      <div class="lines-head">
+        <span>Item</span>
+        <span style="text-align:center">Night/Qty</span>
+        <span style="text-align:center">Price</span>
+        <span style="text-align:right">Total</span>
+        <span></span>
+      </div>
+      <div id="lines-container"></div>
+      <button class="btn btn-ghost" onclick="addLine()">+ Add a line</button>
+
+      <div class="total-bar" style="margin-top:14px;">
+        <span class="tl">Total (EUR)</span>
+        <span class="tv" id="grand-total">€0.00</span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveInvoice()">Save Invoice</button>
+        <button class="btn btn-outline" onclick="resetForm()">Reset</button>
+      </div>
+    </div><!-- /panel-form -->
+
+    <!-- CONTACTS PANEL -->
+    <div class="panel" id="panel-contacts">
+      <div class="section-label">Saved Clients</div>
+      <div id="contacts-list"></div>
+      <p class="empty" id="contacts-empty" style="display:none">No clients saved yet.</p>
+    </div>
+
+    <!-- INVOICES PANEL -->
+    <div class="panel" id="panel-invoices">
+      <div class="section-label">Saved Invoices</div>
+      <div id="invoices-list"></div>
+      <p class="empty" id="invoices-empty" style="display:none">No invoices saved yet.</p>
+    </div>
+
+  </aside>
+
+  <!-- ── PREVIEW ── -->
+  <main class="preview-area">
+    <div class="preview-toolbar">
+      <button class="btn btn-outline" onclick="resetForm()">← New</button>
+      <button class="btn btn-gold" onclick="window.print()">⊟ Print / Export PDF</button>
+    </div>
+    <div id="invoice-output"></div>
+  </main>
+</div>
+
+<script>
+/* ─── DATA ─────────────────────────────────────────── */
+const HOTELS = [
+  "Hilton Convention Makkah","Pullman Zamzam Makkah","Swissôtel Al Maqam Makkah",
+  "Mövenpick Hajar Tower Makkah","Anjum Makkah","Intercontinental Dar Al Iman Makkah",
+  "Le Méridien Towers Makkah","Royal Dar Al Eiman Makkah","Fairmont Makkah Clock Royal Tower",
+  "Anwar Al Madinah Mövenpick Hotel","Hilton Medina","Pullman Zamzam Madinah",
+  "Dar Al Iman Intercontinental Médine","Crowne Plaza Medina","Oberoi Madinah",
+  "Millennium Hotel Madinah","Dubaï — Hôtel au choix","Istanbul — Hôtel au choix",
+  "Le Caire — Hôtel au choix","Autre hôtel (à préciser)"
+];
+const SERVICES = [
+  "Pack Transport Complet","Pack Omra Complet","Visa Omra","Billet d'avion",
+  "Service de guide","Assurance voyage","Transfer aéroport","Autre service (à préciser)"
+];
+
+let lines = [], contacts = [], invoices = [], lineId = 0;
+let editingInvKey = null;
+
+/* ─── STORAGE ──────────────────────────────────────── */
+async function storageGet(key) {
+  try {
+    const r = await window.storage.get(key);
+    return r ? JSON.parse(r.value) : null;
+  } catch { return null; }
+}
+async function storageSet(key, val) {
+  try { await window.storage.set(key, JSON.stringify(val)); } catch (e) { console.error(e); }
+}
+async function storageDel(key) {
+  try { await window.storage.delete(key); } catch {}
+}
+async function storageList(prefix) {
+  try {
+    const r = await window.storage.list(prefix);
+    return r ? r.keys : [];
+  } catch { return []; }
+}
+
+/* ─── INIT ─────────────────────────────────────────── */
+async function init() {
+  document.getElementById('inv-date').valueAsDate = new Date();
+  await loadContacts();
+  await loadInvoices();
+  renderContactSelector();
+  addLine();
+  buildPreview();
+}
+
+/* ─── CONTACTS ─────────────────────────────────────── */
+async function loadContacts() {
+  const c = await storageGet('qs:contacts');
+  contacts = c || [];
+}
+async function persistContacts() {
+  await storageSet('qs:contacts', contacts);
+}
+function renderContactSelector() {
+  const el = document.getElementById('contact-selector-area');
+  if (!contacts.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="margin-bottom:8px;font-size:11px;color:var(--muted)">Select a saved client:</div>` +
+    contacts.map((c,i) => `
+      <div class="contact-card" onclick="fillContact(${i})">
+        <span class="cc-name">${c.name}</span>
+        <span class="cc-sub">${c.email||''}</span>
+      </div>`).join('');
+}
+function renderContactsList() {
+  const el = document.getElementById('contacts-list');
+  const em = document.getElementById('contacts-empty');
+  if (!contacts.length) { el.innerHTML = ''; em.style.display='block'; return; }
+  em.style.display='none';
+  el.innerHTML = contacts.map((c,i) => `
+    <div class="contact-card" style="cursor:default">
+      <span class="cc-name">${c.name}</span>
+      <span class="cc-sub" style="flex:1">${c.addr||''}<br>${c.email||''} ${c.phone||''}</span>
+      <button class="cc-del" onclick="deleteContact(${i})" title="Supprimer">✕</button>
+    </div>`).join('');
+}
+function fillContact(i) {
+  const c = contacts[i];
+  document.getElementById('cli-name').value  = c.name  || '';
+  document.getElementById('cli-siret').value = c.siret || '';
+  document.getElementById('cli-addr').value  = c.addr  || '';
+  document.getElementById('cli-email').value = c.email || '';
+  document.getElementById('cli-phone').value = c.phone || '';
+  buildPreview();
+}
+async function saveContact() {
+  const name = document.getElementById('cli-name').value.trim();
+  if (!name) { alert('Please enter at least the client name.'); return; }
+  const c = {
+    name,
+    siret: document.getElementById('cli-siret').value.trim(),
+    addr:  document.getElementById('cli-addr').value.trim(),
+    email: document.getElementById('cli-email').value.trim(),
+    phone: document.getElementById('cli-phone').value.trim()
+  };
+  const idx = contacts.findIndex(x => x.name.toLowerCase() === name.toLowerCase());
+  if (idx >= 0) contacts[idx] = c; else contacts.push(c);
+  await persistContacts();
+  renderContactSelector();
+  renderContactsList();
+  alert('Client saved ✓');
+}
+async function deleteContact(i) {
+  if (!confirm('Delete this client?')) return;
+  contacts.splice(i, 1);
+  await persistContacts();
+  renderContactSelector();
+  renderContactsList();
+}
+
+/* ─── INVOICES STORAGE ─────────────────────────────── */
+async function loadInvoices() {
+  const keys = await storageList('qs:inv:');
+  invoices = [];
+  for (const key of keys) {
+    const inv = await storageGet(key);
+    if (inv) invoices.push({ key, ...inv });
+  }
+  invoices.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  renderInvoicesList();
+}
+async function saveInvoice() {
+  const num = document.getElementById('inv-num').value.trim();
+  if (!num) { alert('Please enter an invoice number.'); return; }
+  const cliName = document.getElementById('cli-name').value.trim();
+  if (!cliName) { alert('Please enter the client name.'); return; }
+
+  const key = editingInvKey || `qs:inv:${Date.now()}`;
+  const inv = {
+    num,
+    date:    document.getElementById('inv-date').value,
+    status:  document.getElementById('inv-status').value,
+    cliName,
+    cliSiret: document.getElementById('cli-siret').value.trim(),
+    cliAddr:  document.getElementById('cli-addr').value.trim(),
+    cliEmail: document.getElementById('cli-email').value.trim(),
+    cliPhone: document.getElementById('cli-phone').value.trim(),
+    lines:   JSON.parse(JSON.stringify(lines))
+  };
+  await storageSet(key, inv);
+  editingInvKey = key;
+  await loadInvoices();
+  buildPreview();
+  alert(`Invoice ${num} saved ✓`);
+}
+async function deleteInvoice(key, ev) {
+  ev.stopPropagation();
+  if (!confirm('Delete this invoice?')) return;
+  await storageDel(key);
+  if (editingInvKey === key) { editingInvKey = null; resetForm(); }
+  await loadInvoices();
+}
+function loadInvoiceIntoForm(inv) {
+  editingInvKey = inv.key;
+  document.getElementById('inv-num').value    = inv.num    || '';
+  document.getElementById('inv-date').value   = inv.date   || '';
+  document.getElementById('inv-status').value = inv.status || 'unpaid';
+  document.getElementById('cli-name').value   = inv.cliName  || '';
+  document.getElementById('cli-siret').value  = inv.cliSiret || '';
+  document.getElementById('cli-addr').value   = inv.cliAddr  || '';
+  document.getElementById('cli-email').value  = inv.cliEmail || '';
+  document.getElementById('cli-phone').value  = inv.cliPhone || '';
+  lines = (inv.lines || []).map(l => ({ ...l }));
+  lineId = lines.length;
+  renderLines();
+  buildPreview();
+  switchTab('form');
+}
+function renderInvoicesList() {
+  const el = document.getElementById('invoices-list');
+  const em = document.getElementById('invoices-empty');
+  if (!invoices.length) { el.innerHTML=''; em.style.display='block'; return; }
+  em.style.display='none';
+  const total = inv => (inv.lines||[]).reduce((s,l)=>s+l.qty*l.price,0).toFixed(2);
+  el.innerHTML = invoices.map(inv => `
+    <div class="inv-card" onclick="loadInvoiceIntoForm(${JSON.stringify(inv).replace(/"/g,'&quot;')})">
+      <span class="ic-num">#${inv.num}</span>
+      <span class="ic-client">${inv.cliName||'—'}</span>
+      <span class="badge ${inv.status==='paid'?'badge-paid':'badge-unpaid'}">${inv.status==='paid'?'Paid':'Unpaid'}</span>
+      <span class="ic-total">€${total(inv)}</span>
+      <span class="ic-date">${inv.date||''}</span>
+      <button class="ic-del" onclick="deleteInvoice('${inv.key}', event)" title="Supprimer">✕</button>
+    </div>`).join('');
+}
+
+/* ─── LINE ITEMS ───────────────────────────────────── */
+function addLine() {
+  lines.push({ id: lineId++, type:'hotel', item: HOTELS[0], detail:'', qty:1, price:0 });
+  renderLines();
+}
+function removeLine(idx) { lines.splice(idx,1); renderLines(); }
+function lineChange(idx, field, val) {
+  lines[idx][field] = val;
+  if (field === 'type') lines[idx].item = val==='hotel' ? HOTELS[0] : SERVICES[0];
+  renderLines();
+}
+function renderLines() {
+  const c = document.getElementById('lines-container');
+  if (!lines.length) { c.innerHTML=''; updateTotal(); return; }
+  c.innerHTML = lines.map((l,idx) => {
+    const opts = (l.type==='hotel'?HOTELS:SERVICES)
+      .map(x=>`<option value="${x}" ${l.item===x?'selected':''}>${x}</option>`).join('');
+    const safeDetail = (l.detail||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--sand-dk);">
+      <div style="display:grid;grid-template-columns:1fr 60px 70px 80px 28px;gap:6px;align-items:start;margin-bottom:6px;">
+        <div>
+          <select onchange="lineChange(${idx},'type',this.value)" style="font-size:11px;padding:4px 6px;margin-bottom:3px;width:100%;border:1px solid var(--border);border-radius:2px;background:var(--sand);">
+            <option value="hotel" ${l.type==='hotel'?'selected':''}>🏨 Hotel</option>
+            <option value="service" ${l.type==='service'?'selected':''}>📋 Service</option>
+          </select>
+          <select onchange="lineChange(${idx},'item',this.value)" style="font-size:11px;padding:4px 6px;width:100%;border:1px solid var(--border);border-radius:2px;background:var(--sand);">${opts}</select>
+        </div>
+        <input type="number" min="1" value="${l.qty}" oninput="lineChange(${idx},'qty',+this.value)" style="text-align:center;border:1px solid var(--border);border-radius:2px;background:var(--sand);padding:5px;" />
+        <input type="number" min="0" step="0.01" value="${l.price||''}" placeholder="€" oninput="lineChange(${idx},'price',+this.value)" style="text-align:center;border:1px solid var(--border);border-radius:2px;background:var(--sand);padding:5px;" />
+        <div class="line-total">€${(l.qty*l.price).toFixed(2)}</div>
+        <button class="btn-rm" onclick="removeLine(${idx})">×</button>
+      </div>
+      <textarea placeholder="Details (guest name, dates, room type, inclusions…)"
+        oninput="lineChange(${idx},'detail',this.value)"
+        style="width:100%;padding:7px 9px;border:1px solid var(--border);border-radius:2px;background:var(--sand);font-family:var(--ff-sans);font-size:11.5px;line-height:1.6;resize:vertical;min-height:72px;color:var(--text);">${safeDetail}</textarea>
+    </div>`;
+  }).join('');
+  updateTotal();
+  buildPreview();
+}
+function updateTotal() {
+  const t = lines.reduce((s,l)=>s+l.qty*l.price,0);
+  document.getElementById('grand-total').textContent = '€'+t.toFixed(2);
+}
+
+/* ─── PREVIEW ──────────────────────────────────────── */
+function buildPreview() {
+  const num     = document.getElementById('inv-num').value || '—';
+  const rawDate = document.getElementById('inv-date').value;
+  const dateStr = rawDate
+    ? new Date(rawDate+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})
+    : '—';
+  const status  = document.getElementById('inv-status').value;
+  const cliName  = document.getElementById('cli-name').value  || '—';
+  const cliSiret = document.getElementById('cli-siret').value;
+  const cliAddr  = document.getElementById('cli-addr').value;
+  const cliEmail = document.getElementById('cli-email').value;
+  const cliPhone = document.getElementById('cli-phone').value;
+  const total = lines.reduce((s,l)=>s+l.qty*l.price,0);
+  const colHdr = lines.some(l=>l.type==='hotel') ? 'NUIT / QTÉ' : 'QTÉ';
+
+  const rows = lines.map(l=>{
+    const detail = (l.detail||'').replace(/\n/g,'<br>');
+    return `<tr>
+      <td>
+        <div class="item-name">${l.item||'—'}</div>
+        ${detail ? `<div class="item-detail">${detail}</div>` : ''}
+      </td>
+      <td style="text-align:center">${l.qty}</td>
+      <td style="text-align:center">€${parseFloat(l.price||0).toFixed(2)}</td>
+      <td style="text-align:right">€${(l.qty*l.price).toFixed(2)}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;font-size:12px;font-style:italic">Aucune ligne de facturation</td></tr>`;
+
+  document.getElementById('invoice-output').innerHTML = `
+  <div class="invoice-doc" id="printable-doc">
+    <div class="doc-header">
+      <div class="doc-brand">
+        <div class="brand-name">Qiyama Service</div>
+        <div class="brand-tagline">Travel &amp; Pilgrimage Services</div>
+      </div>
+      <div class="doc-meta">
+        <div class="inv-label">FACTURE</div>
+        <div class="inv-sub" style="margin-top:8px;">
+          N° <span>${num}</span>
+          ${status==='paid'?'<span class="badge badge-paid" style="margin-left:8px">Payée</span>':''}
+        </div>
+        <div class="inv-sub">Date : <span>${dateStr}</span></div>
+      </div>
+    </div>
+    <div class="gold-rule"></div>
+    <div class="parties">
+      <div class="party-box billed-by">
+        <div class="pb-label">Billed by</div>
+        <div class="pb-name">Qiyama Service Ltd</div>
+        Flat 1 The Barley Lea, Coventry, CV3 1EW<br>
+        United Kingdom (UK)<br>
+        Company No: 17421101<br>
+        contact@qiyamaservice.com<br>
+        +44 07962707058
+      </div>
+      <div class="party-box billed-to">
+        <div class="pb-label">Billed to</div>
+        <div class="pb-name">${cliName}</div>
+        ${cliAddr  ? cliAddr+'<br>'      : ''}
+        ${cliSiret ? 'SIRET : '+cliSiret+'<br>' : ''}
+        ${cliEmail ? cliEmail+'<br>'     : ''}
+        ${cliPhone ? cliPhone            : ''}
+      </div>
+    </div>
+    <table class="inv-table">
+      <thead><tr>
+        <th>Désignation</th>
+        <th style="text-align:center">${colHdr}</th>
+        <th style="text-align:center">Prix unit.</th>
+        <th style="text-align:right">Prix total</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="totals-section">
+      <div class="total-block">
+        <div class="tbl-label">Total (EUR)</div>
+        <div class="tbl-amount">€${total.toFixed(2)}</div>
+        ${status==='paid' ? `<div class="tbl-status">Amount settled</div>` : ''}
+      </div>
+    </div>
+    <div class="bank-section">
+      <div class="bs-label">Coordonnées bancaires</div>
+      <div class="bank-grid">
+        <span class="bk">Titulaire</span><span class="bv">Qiyama Service Ltd</span>
+        <span class="bk">IBAN</span><span class="bv">BE39905971465919</span>
+        <span class="bk">SWIFT / BIC</span><span class="bv">TRWIBEB1XXX</span>
+        <span class="bk">Banque</span><span class="bv">Wise — Rue du Trône 100, Bruxelles, Belgique</span>
+      </div>
+    </div>
+    <div class="inv-footer">
+      Ce document est généré électroniquement. Aucune signature n'est requise.
+    </div>
+  </div>`;
+}
+
+/* ─── TABS ─────────────────────────────────────────── */
+function switchTab(t) {
+  document.querySelectorAll('.tab,.panel').forEach(el=>el.classList.remove('active'));
+  document.querySelector(`.tab[onclick="switchTab('${t}')"]`).classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+  if (t==='contacts') renderContactsList();
+  if (t==='invoices') renderInvoicesList();
+}
+
+/* ─── RESET ────────────────────────────────────────── */
+function resetForm() {
+  editingInvKey = null;
+  document.getElementById('inv-num').value   = '';
+  document.getElementById('inv-date').valueAsDate = new Date();
+  document.getElementById('inv-status').value = 'unpaid';
+  document.getElementById('cli-name').value  = '';
+  document.getElementById('cli-siret').value = '';
+  document.getElementById('cli-addr').value  = '';
+  document.getElementById('cli-email').value = '';
+  document.getElementById('cli-phone').value = '';
+  lines = []; lineId = 0;
+  renderLines();
+  addLine();
+  buildPreview();
+}
+
+init();
+</script>
+</body>
+</html>

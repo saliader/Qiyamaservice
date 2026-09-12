@@ -558,7 +558,7 @@ body {
 
 /* ─── PRINT ──────────────────────────────────────────── */
 @media print {
-  @page { margin: 0; size: A4 portrait; }
+  @page { margin: 15mm; size: A4 portrait; }
 
   body, html { background: #fff !important; overflow: visible !important; }
   .app-bar, .sidebar, .preview-toolbar, .fab-preview, .preview-modal-bar { display: none !important; }
@@ -572,9 +572,14 @@ body {
     width: 100% !important;
     max-width: 100% !important;
     box-shadow: none !important;
-    padding: 32px 40px !important;
+    padding: 0 !important;
     border-top: 4px solid var(--gold) !important;
+    page-break-inside: avoid;
   }
+  .parties, .inv-table, .bank-section, .totals-section {
+    page-break-inside: avoid;
+  }
+  .invoice-doc * { page-break-after: avoid; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
 
@@ -814,22 +819,32 @@ let lines = [], contacts = [], invoices = [], lineId = 0;
 let editingInvKey = null;
 
 /* ─── STORAGE ──────────────────────────────────────── */
+/* ─── STORAGE ──────────────────────────────────────── */
+const memStore = {};
+function lsAvailable() {
+  try { localStorage.setItem('__test__','1'); localStorage.removeItem('__test__'); return true; }
+  catch { return false; }
+}
+const LS = lsAvailable();
 async function storageGet(key) {
   try {
-    const r = await window.storage.get(key);
-    return r ? JSON.parse(r.value) : null;
+    const v = LS ? localStorage.getItem(key) : memStore[key];
+    return v ? JSON.parse(v) : null;
   } catch { return null; }
 }
 async function storageSet(key, val) {
-  try { await window.storage.set(key, JSON.stringify(val)); } catch (e) { console.error(e); }
+  try {
+    const s = JSON.stringify(val);
+    if (LS) localStorage.setItem(key, s); else memStore[key] = s;
+  } catch(e) { console.error('storageSet error', e); }
 }
 async function storageDel(key) {
-  try { await window.storage.delete(key); } catch {}
+  try { if (LS) localStorage.removeItem(key); else delete memStore[key]; } catch {}
 }
 async function storageList(prefix) {
   try {
-    const r = await window.storage.list(prefix);
-    return r ? r.keys : [];
+    const keys = LS ? Object.keys(localStorage) : Object.keys(memStore);
+    return keys.filter(k => k.startsWith(prefix));
   } catch { return []; }
 }
 
@@ -1101,7 +1116,7 @@ function buildPreview() {
     </div>
     <table class="inv-table">
       <thead><tr>
-        <th>Iteù</th>
+        <th>Items</th>
         <th style="text-align:center">${colHdr}</th>
         <th style="text-align:center">Prix unit.</th>
         <th style="text-align:right">Prix total</th>

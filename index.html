@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
 /* ─── TOKENS ─────────────────────────────────────────── */
@@ -872,7 +873,7 @@ body {
   <main class="preview-area">
     <div class="preview-toolbar">
       <button class="btn btn-outline" onclick="resetForm()">← New</button>
-      <button class="btn btn-gold" onclick="window.print()">⊟ Print / Export PDF</button>
+      <button class="btn btn-gold" onclick="exportPDF()">⊟ Export PDF</button>
     </div>
     <div id="invoice-output"></div>
   </main>
@@ -886,7 +887,7 @@ body {
   <div class="preview-modal-bar">
     <span class="pm-title">Invoice Preview</span>
     <button class="pm-close" onclick="closeMobilePreview()">← Back</button>
-    <button class="pm-print" onclick="window.print()">⊟ PDF</button>
+    <button class="pm-print" onclick="exportPDF()">⊟ PDF</button>
   </div>
   <div class="preview-modal-content">
     <div id="invoice-output-mobile"></div>
@@ -1320,9 +1321,9 @@ function buildPreview() {
             ? new Date(paidDateRaw+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})
             : '—';
           return `<div style="
-            border: 2.5px solid var(--gold);
+            border: 2.5px solid #1a6b45;
             border-radius: 6px;
-            background: var(--gold-lt);
+            background: #f0faf5;
             padding: 18px 24px;
             display: flex;
             align-items: center;
@@ -1331,10 +1332,10 @@ function buildPreview() {
             gap: 16px;
           ">
             <div>
-              <div style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--night);margin-bottom:4px;">✓ Facture intégralement réglée</div>
-              <div style="font-family:var(--ff-serif);font-size:17px;font-weight:600;color:var(--night);">Payée le ${paidDateStr}</div>
+              <div style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#1a6b45;margin-bottom:4px;">✓ Facture intégralement réglée</div>
+              <div style="font-family:var(--ff-serif);font-size:17px;font-weight:600;color:#1a6b45;">Payée le ${paidDateStr}</div>
             </div>
-            <div style="font-family:var(--ff-sans);font-size:28px;font-weight:700;color:var(--night);">€${total.toFixed(2)}</div>
+            <div style="font-family:var(--ff-serif);font-size:28px;font-weight:700;color:#1a6b45;">€${total.toFixed(2)}</div>
           </div>`;
         })()
       : `<div style="
@@ -1352,7 +1353,7 @@ function buildPreview() {
             <div style="font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--slate);margin-bottom:4px;">Reste à devoir</div>
             <div style="font-size:11px;color:var(--muted);">Merci de régler ce solde à réception</div>
           </div>
-          <div style="font-family:var(--ff-sans);font-size:36px;font-weight:700;color:var(--night);">€${due.toFixed(2)}</div>
+          <div style="font-family:var(--ff-serif);font-size:36px;font-weight:700;color:var(--night);">€${due.toFixed(2)}</div>
         </div>`
     }
     <div class="bank-section">
@@ -1411,6 +1412,31 @@ function resetForm() {
   renderDeposits();
   addLine();
   buildPreview();
+}
+
+
+/* ─── EXPORT PDF ───────────────────────────────────── */
+function exportPDF() {
+  const num = document.getElementById('inv-num').value.trim() || 'facture';
+  const filename = num + '.pdf';
+
+  const source = document.getElementById('printable-doc');
+  if (!source) { alert('Aucune facture à exporter.'); return; }
+
+  const opt = {
+    margin:      [8, 8, 8, 8],
+    filename:    filename,
+    image:       { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  const btn = document.querySelector('[onclick="exportPDF()"]');
+  if (btn) { btn.textContent = '⏳ Génération…'; btn.disabled = true; }
+
+  html2pdf().set(opt).from(source).save().then(() => {
+    if (btn) { btn.textContent = '⊟ Export PDF'; btn.disabled = false; }
+  });
 }
 
 init();

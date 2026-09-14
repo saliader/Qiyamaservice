@@ -340,6 +340,7 @@ body {
   color: var(--night);
   font-family: var(--ff-sans);
   border-top: 4px solid var(--gold);
+  page-break-inside: avoid;
 }
 
 /* Header */
@@ -665,6 +666,9 @@ body {
   .parties, .inv-table, .bank-section, .totals-section {
     page-break-inside: avoid;
   }
+  .invoice-doc {
+  padding: 12px 24px !important;  /* réduit les marges internes à l'impression */
+}
 }
 /* ─── SCROLLBAR ──────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; }
@@ -1422,12 +1426,13 @@ function exportPDF() {
   if (!source) { alert('Aucune facture à exporter.'); return; }
 
   const opt = {
-    margin:      [8, 8, 8, 8],
-    filename:    filename,
-    image:       { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
+  margin:      [6, 8, 6, 8],
+  filename:    filename,
+  image:       { type: 'jpeg', quality: 0.98 },
+  html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
+  jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
+};
 
   const btn = document.querySelector('[onclick="exportPDF()"]');
   if (btn) { btn.textContent = '⏳ Génération…'; btn.disabled = true; }
